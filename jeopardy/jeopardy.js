@@ -202,7 +202,8 @@ function handleClick(evt) {
  */
 
 function showLoadingView() {
-  $table = $(".table");
+  
+  let $table = $(".table");
   $table.remove();
   $(".fa-3x").empty();
   let spinner = '<i class="fas fa-spinner fa-spin">'
