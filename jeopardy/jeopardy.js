@@ -166,7 +166,7 @@ function fillTable() {
 
 function handleClick(evt) {
   evt.preventDefault();
-  $event = $(evt.target);
+  let $event = $(evt.target);
   let clueId;
 
   // grabs the id regardless of where in the square was clicked
