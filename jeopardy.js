@@ -1,7 +1,6 @@
 const BASE_API_URL = "http://jservice.io/api/";
 const NUM_CATEGORIES = 6;
 const NUM_CLUES_PER_CAT = 5;
-const LOADING_TIME = 5000;
 // categories is the main data structure for the app; it should eventually look like this:
 
 //  [
@@ -18,49 +17,36 @@ const LOADING_TIME = 5000;
 //      ],
 //    }, ...4 more categories ...
 //  ]
-let game;
-let categoriesId;
-let categories;
 
-class Jeopardy{
-    constructor(numOfCategories,numOfCluesPerCat){
-        this.numOfCategories = numOfCategories;
-        this.numOfCluesPerCat = numOfCluesPerCat;
-        this.randomIDArray = [];
-        this.categories = [];
-    }
 
-    /** Get NUM_CATEGORIES random categories from API.
-     *
-     * Returns array of category ids, e.g. [4, 12, 5, 9, 20, 1]
-     */
-    async  getCategoryIds() {
-        let randomOffset = _.random(0, 150);
-    
-        let responseOfCategories = await axios({
-            url: `${BASE_API_URL}categories`,
-            method: "GET",
-            params: {
-                count: 100,
-                offset: randomOffset
-            }
-        });
-    
-        let responseIDArray =
-            responseOfCategories.data.map((val) => val.id);
-    
-        let randomCatIDArray = _.sampleSize(responseIDArray, this.numOfCluesPerCat);
-    
-        this.randomIDArray =  randomCatIDArray;
-    }
+let categories = [];
 
-    
 /** Get NUM_CATEGORIES random categories from API.
  *
  * Returns array of category ids, e.g. [4, 12, 5, 9, 20, 1]
  */
 
 
+async function getCategoryIds() {
+    let randomOffset = _.random(0, 150);
+
+
+    let responseOfCategories = await axios({
+        url: `${BASE_API_URL}categories`,
+        method: "GET",
+        params: {
+            count: 100,
+            offset: randomOffset
+        }
+    });
+
+    let responseIDArray =
+        responseOfCategories.data.map((val) => val.id);
+
+    let randomCatIDArray = _.sampleSize(responseIDArray, NUM_CATEGORIES);
+
+    return randomCatIDArray;
+}
 
 /** Return object with data about a category:
  *
@@ -74,8 +60,7 @@ class Jeopardy{
  *   ]
  */
 
-    async getCategory(catId) {
-
+async function getCategory(catId) {
     let response = await axios({
         url: `${BASE_API_URL}category`,
         method: "GET",
@@ -83,8 +68,9 @@ class Jeopardy{
             id: catId
         }
     });
+    console.log()
 
-    let clueArray = response.data.clues.slice(0, this.numOfCluesPerCat);
+    let clueArray = response.data.clues.slice(0, 5);
     clueArray.forEach((clue) =>
         clue.show = null
     )
@@ -99,27 +85,6 @@ class Jeopardy{
     return category;
 }
 
-    async categoriesGen() {
-        let categoriesList = [];
-        let categoriesId = await this.getCategoryIds();
-        for (let categoryId of this.randomIDArray) {
-            const category = await this.getCategory(categoryId);
-            console.log(category)
-            categoriesList.push(category)
-        }
-        this.categories = categoriesList
-    }
-}
-
-
-/** Get NUM_CATEGORIES random categories from API.
- *
- * Returns array of category ids, e.g. [4, 12, 5, 9, 20, 1]
- */
-
-
-
-
 /** Fill an HTML table with the categories & cells for questions.
  *
  * - The <thead> should be filled w/a <tr>, and a <td> for each category
@@ -127,6 +92,17 @@ class Jeopardy{
  *   each with a question for each category in a <td>
  *   (initially, just show a "?" where the question/answer would go.)
  */
+
+
+/**todo might need to remove this function, currently using it to generqate categories */
+/** add eventlistener on start button */
+async function categoriesGen() {
+    let categoriesId = await getCategoryIds();
+    for (let categoryId of categoriesId) {
+        const category = await getCategory(categoryId);
+        categories.push(category)
+    }
+}
 
 
 
@@ -232,20 +208,21 @@ function hideLoadingView() {
  */
 
 async function setupGameBoard() {
-    game = new Jeopardy(NUM_CATEGORIES,NUM_CLUES_PER_CAT)
-    await game.categoriesGen()
-    categories = game.categories
+
+    let categoriesId = await getCategoryIds();
+    for (let categoryId of categoriesId) {
+        const category = await getCategory(categoryId);
+        categories.push(category)
+    }
     fillTable()
-
 }
-
 
 /** Start game: show loading state, setup game board, stop loading state */
 
 async function setupAndStart() {
-    
+    categories = [];
     showLoadingView(); 
-    await setupGameBoard();
+    setTimeout(await setupGameBoard(),LOADING_TIME)
     hideLoadingView();   
 }
 
@@ -257,5 +234,7 @@ async function setupAndStart() {
  */
 
 // ADD THOSE THINGS HERE
+
+
 $("body").on("click", "#start-button", setupAndStart)
 $("body").on("click", ".clues", handleClick)

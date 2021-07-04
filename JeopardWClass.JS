@@ -18,16 +18,11 @@ const LOADING_TIME = 5000;
 //      ],
 //    }, ...4 more categories ...
 //  ]
-let game;
-let categoriesId;
-let categories;
 
 class Jeopardy{
     constructor(numOfCategories,numOfCluesPerCat){
         this.numOfCategories = numOfCategories;
         this.numOfCluesPerCat = numOfCluesPerCat;
-        this.randomIDArray = [];
-        this.categories = [];
     }
 
     /** Get NUM_CATEGORIES random categories from API.
@@ -51,7 +46,7 @@ class Jeopardy{
     
         let randomCatIDArray = _.sampleSize(responseIDArray, this.numOfCluesPerCat);
     
-        this.randomIDArray =  randomCatIDArray;
+        return randomCatIDArray;
     }
 
     
@@ -100,15 +95,18 @@ class Jeopardy{
 }
 
     async categoriesGen() {
-        let categoriesList = [];
+        let categories = [];
         let categoriesId = await this.getCategoryIds();
-        for (let categoryId of this.randomIDArray) {
+        for (let categoryId of categoriesId) {
             const category = await this.getCategory(categoryId);
             console.log(category)
-            categoriesList.push(category)
+            this.categories.push(category)
         }
-        this.categories = categoriesList
+        return categories;
     }
+
+
+
 }
 
 
@@ -232,20 +230,20 @@ function hideLoadingView() {
  */
 
 async function setupGameBoard() {
-    game = new Jeopardy(NUM_CATEGORIES,NUM_CLUES_PER_CAT)
-    await game.categoriesGen()
-    categories = game.categories
+    let game = new Jeopardy(NUM_CATEGORIES,NUM_CLUES_PER_CAT)
+    let categories = game.categories
     fillTable()
 
 }
-
 
 /** Start game: show loading state, setup game board, stop loading state */
 
 async function setupAndStart() {
     
+   
+    let categories = game.categories
     showLoadingView(); 
-    await setupGameBoard();
+    setTimeout(await setupGameBoard(),LOADING_TIME)
     hideLoadingView();   
 }
 
@@ -257,5 +255,7 @@ async function setupAndStart() {
  */
 
 // ADD THOSE THINGS HERE
+
+
 $("body").on("click", "#start-button", setupAndStart)
 $("body").on("click", ".clues", handleClick)
