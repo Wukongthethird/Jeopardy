@@ -1,7 +1,7 @@
 const BASE_API_URL = "http://jservice.io/api/";
 const NUM_CATEGORIES = 6;
 const NUM_CLUES_PER_CAT = 5;
-
+const LOADING_TIME = 10000;
 // categories is the main data structure for the app; it should eventually look like this:
 
 //  [
@@ -21,7 +21,6 @@ const NUM_CLUES_PER_CAT = 5;
 
 let categories = [];
 
-
 /** Get NUM_CATEGORIES random categories from API.
  *
  * Returns array of category ids, e.g. [4, 12, 5, 9, 20, 1]
@@ -29,19 +28,20 @@ let categories = [];
 
 
 async function getCategoryIds() {
-    let randomOffset = _.random( 0,1000);
+    let randomOffset = _.random(0, 150);
+
 
     let responseOfCategories = await axios({
-        url:`${BASE_API_URL}categories`,
-        method:"GET",
-        params: { 
-            count: 10000 ,
+        url: `${BASE_API_URL}categories`,
+        method: "GET",
+        params: {
+            count: 100,
             offset: randomOffset
-        } 
+        }
     });
 
-    let responseIDArray = 
-        responseOfCategories.data.map( (val) => val.id);
+    let responseIDArray =
+        responseOfCategories.data.map((val) => val.id);
 
     let randomCatIDArray = _.sampleSize(responseIDArray, NUM_CATEGORIES);
 
@@ -62,18 +62,24 @@ async function getCategoryIds() {
 
 async function getCategory(catId) {
     let response = await axios({
-        url:`${BASE_API_URL}category`,
-        method:"GET",
-        params: { 
+        url: `${BASE_API_URL}category`,
+        method: "GET",
+        params: {
             id: catId
-        } 
+        }
     });
-    
+    console.log()
 
-    let clueArray = response.data.clues;
+    let clueArray = response.data.clues.slice(0, 5);
+    clueArray.forEach((clue) =>
+        clue.show = null
+    )
     let category = {
+
         title: response.data.title,
-        clue: clueArray
+        clues: {
+            clue: clueArray,
+        }
     };
 
     return category;
@@ -87,9 +93,48 @@ async function getCategory(catId) {
  *   (initially, just show a "?" where the question/answer would go.)
  */
 
-function fillTable() {
-    let $table = $("#question-table")
+
+/**todo might need to remove this function, currently using it to generqate categories */
+/** add eventlistener on start button */
+async function categoriesGen() {
+    let categoriesId = await getCategoryIds();
+    for (let categoryId of categoriesId) {
+        const category = await getCategory(categoryId);
+        categories.push(category)
+    }
 }
+
+
+
+function fillTable() {
+
+    let $table = $( '<table id="question-table"></table>')
+    let tableStarter = ('<thead id = "table-head"> <tr id = "table-head-row"> </tr></thead>' 
+        + '<tbody id = "table-body"></tbody>')
+    $table.append(tableStarter)
+    $("body").append($table)
+
+    let $tableHead= $('#table-head-row')
+    let $tableBody = $("#table-body")
+
+    for (let titles = 0; titles < categories.length; titles++) {
+        let $title = $(`<td>${categories[titles].title}</td>`)
+        $tableHead.append($title)
+    }
+
+    for (let titles = 0; titles < NUM_CLUES_PER_CAT; titles++) {
+        let $row = $(`<tr id = ${titles}></tr>"`)
+
+        for (let clue = 0; clue < NUM_CATEGORIES; clue++) {
+            //maybe add the id/question/answer
+            let $rowTd = (`<td class = "clues" id = "${titles}-${clue}" >
+                <i class="far fa-question-circle"></span></td>`);
+            $row.append($rowTd);
+        }
+        $tableBody.append($row);
+    }
+}
+
 
 /** Handle clicking on a clue: show the question or answer.
  *
@@ -99,20 +144,61 @@ function fillTable() {
  * - if currently "answer", ignore click
  * */
 
+
 function handleClick(evt) {
+    evt.preventDefault();
+    $event = $(evt.target)
+    let clueId;
+
+    if (
+        $event.prop("tagName") === "I" ||
+        $event.prop("tagName") === "P"
+    ) {
+        clueId = ($event.parent().attr("id"))
+        // clueId = $event.attr("id");
+    } else if ($event.prop("tagName") === "TD") {
+        clueId = $event.attr("id");
+    }
+
+    let $clueElement = $(`#${clueId}`)
+    let clueInfo = categories[ clueId[2] ].clues.clue[ clueId[0] ]
+    let clueQuestion = clueInfo.question
+    let clueAnswer = clueInfo.answer
+    let clueShow =  clueInfo.show
+
+    if(clueShow === null){
+        $clueElement.empty()
+        $clueElement.html( `<p>${clueQuestion}</p>`)
+        clueInfo.show = "question"
+
+    } else if(clueShow === "question"){
+        $clueElement.empty()
+        $clueElement.html( `<p>${clueAnswer}</p>`)
+        clueInfo.show = "question"
+    } 
 }
+
+
 
 /** Wipe the current Jeopardy board, show the loading spinner,
  * and update the button used to fetch data.
  */
 
 function showLoadingView() {
+    $table = $("#question-table")
+    $table.empty()
+    $(".fa-3x").empty()
+    let spinner = '<i class="fas fa-spinner fa-spin">'
+    $(".fa-3x").append(spinner)
+    $("#start-button").text("Loading .... Give it a bit")
 
 }
 
 /** Remove the loading spinner and update the button used to fetch data. */
 
 function hideLoadingView() {
+    $("#start-button").text("Restart")
+    $("body .fa-3x").empty()
 }
 
 /** Setup game data and board:
@@ -122,11 +208,22 @@ function hideLoadingView() {
  */
 
 async function setupGameBoard() {
+
+    let categoriesId = await getCategoryIds();
+    for (let categoryId of categoriesId) {
+        const category = await getCategory(categoryId);
+        categories.push(category)
+    }
+    fillTable()
 }
 
 /** Start game: show loading state, setup game board, stop loading state */
 
 async function setupAndStart() {
+    categories = [];
+    showLoadingView(); 
+    setTimeout(await setupGameBoard(),LOADING_TIME)
+    hideLoadingView();   
 }
 
 /** At start:
@@ -137,3 +234,12 @@ async function setupAndStart() {
  */
 
 // ADD THOSE THINGS HERE
+
+$( document ).ready(
+    $("#start-button").on("click", setupAndStart),
+    $(".clues").on("click",  handleClick)
+)
+
+$("#start-button").on("click", setupAndStart),
+$(".clues").on("click",  handleClick)
+
