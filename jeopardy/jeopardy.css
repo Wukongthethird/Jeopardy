@@ -1,7 +1,71 @@
 /* some colors you may find useful:
-  #115ff4
-  #060ce9
-  #28a200
-  #8d2ab5
-  #74119c
+  #115ff4 blue
+  #060ce9 darker blue
+  #28a200 green
+  #8d2ab5 purple
+  #74119c darker purple
 */
+
+html, body
+{
+    height: 100%;
+}
+body{
+  background-color: #115ff4;
+}
+
+h3 {
+  text-align: center;
+}
+
+.btn{
+  margin: 10px auto;
+  display:block;
+}
+
+.fa-3x {
+  text-align: center;
+ 
+}
+
+
+.table{
+  margin: 20px auto;
+  width:  840px;
+  height: 600px;
+  background-color: rgb(153, 86, 207);
+}
+
+
+th ,td {
+  text-align: center;
+  height: 70px;
+  width: 140px;
+}
+
+tbody{
+  height: 100%;
+  width: 780px;
+  max-height: 500px;  
+
+}
+
+tbody ,td {
+  text-align: center;
+  width:130px;
+  max-height:60px;
+
+}
+
+.far{
+  font-size: 3rem;
+  color: #28a200;
+}
+
+p{
+  font-size: 7px;
+  margin: 0;
+  padding: 0;
+}
+
+
